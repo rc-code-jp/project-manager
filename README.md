@@ -17,7 +17,7 @@ AI を利用して、CSV から軽量なプロジェクト計画を生成する�
 - `data/`: 実データ配置先。Git 管理対象外
 - `output/`: 生成物配置先。Git 管理対象外
 - `skills/`: Codex CLI から呼び出すスキル定義
-- `scripts/`: 補助 CLI
+- `scripts/`: TypeScript 補助 CLI
 
 ## 利用方法
 
@@ -29,23 +29,25 @@ AI を利用して、CSV から軽量なプロジェクト計画を生成する�
 ### 妥当性確認
 
 ```bash
-python3 scripts/project_manager.py validate --input-dir data
+npm run validate -- --input-dir data
 ```
 
 ### 計画生成
 
 ```bash
-python3 scripts/project_manager.py plan --input-dir data --output-dir output
+npm run plan -- --input-dir data --output-dir output
 ```
 
 `schedule.csv` も出力する場合:
 
 ```bash
-python3 scripts/project_manager.py plan --input-dir data --output-dir output --write-schedule
+npm run plan -- --input-dir data --output-dir output --write-schedule
 ```
 
 ## 開発時の確認
 
 - 変更確認: `git status`
 - ドキュメント差分確認: `git diff -- docs/spec.md template/ README.md`
-- テスト実行: `python3 -m unittest discover -s tests`
+- 依存関係導入: `npm install`
+- テスト実行: `npm test`
+- 型検査: `npm run typecheck`

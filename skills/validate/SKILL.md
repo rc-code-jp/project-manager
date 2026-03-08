@@ -17,7 +17,7 @@
 ## 実行
 
 ```bash
-python3 scripts/project_manager.py validate --input-dir data
+npm run validate -- --input-dir data
 ```
 
 ## 確認事項

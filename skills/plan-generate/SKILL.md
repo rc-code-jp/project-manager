@@ -19,13 +19,13 @@
 `gantt.mmd` のみを出力する場合:
 
 ```bash
-python3 scripts/project_manager.py plan --input-dir data --output-dir output
+npm run plan -- --input-dir data --output-dir output
 ```
 
 `schedule.csv` も出力する場合:
 
 ```bash
-python3 scripts/project_manager.py plan --input-dir data --output-dir output --write-schedule
+npm run plan -- --input-dir data --output-dir output --write-schedule
 ```
 
 ## 確認事項
