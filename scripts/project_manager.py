@@ -436,13 +436,16 @@ def write_gantt(path: Path, project: Project, schedule: list[ScheduleEntry]) -> 
     ]
     for entry in schedule:
         mermaid_status = MERMAID_STATUS[entry.task.status]
-        prefix = f"{entry.task.title} :{entry.task.task_id}"
         if mermaid_status:
             line = (
-                f"    {prefix}, {mermaid_status}, {entry.start_date.isoformat()}, {entry.end_date.isoformat()}"
+                f"    {entry.task.title} :{mermaid_status}, {entry.task.task_id}, "
+                f"{entry.start_date.isoformat()}, {entry.end_date.isoformat()}"
             )
         else:
-            line = f"    {prefix}, {entry.start_date.isoformat()}, {entry.end_date.isoformat()}"
+            line = (
+                f"    {entry.task.title} :{entry.task.task_id}, "
+                f"{entry.start_date.isoformat()}, {entry.end_date.isoformat()}"
+            )
         lines.append(line)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

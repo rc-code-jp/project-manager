@@ -82,8 +82,8 @@ class ProjectManagerTests(unittest.TestCase):
             schedule_content = (output_dir / "schedule.csv").read_text(encoding="utf-8")
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Design :TASK-001, done, 2026-03-10, 2026-03-11", gantt_content)
-        self.assertIn("Build :TASK-002, active, 2026-03-12, 2026-03-13", gantt_content)
+        self.assertIn("Design :done, TASK-001, 2026-03-10, 2026-03-11", gantt_content)
+        self.assertIn("Build :active, TASK-002, 2026-03-12, 2026-03-13", gantt_content)
         self.assertIn("TASK-002,Build,進行中,中,2026-03-12,2026-03-13,2026-03-14,TASK-001", schedule_content)
 
 
