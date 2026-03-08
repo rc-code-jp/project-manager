@@ -1,6 +1,6 @@
 # Template Format
 
-`template/tasks.csv` と `template/project.csv` は、Codex CLI から計画スキルを呼び出すための最小入力テンプレートです。
+`template/tasks.csv`、`template/project.csv`、`template/holidays.csv` は、Codex CLI から計画スキルを呼び出すための最小入力テンプレートです。
 
 ## tasks.csv
 
@@ -37,3 +37,18 @@ project_name,start_date,parallel_task_limit
 - `project_name`: 自由入力。
 - `start_date`: 必須。形式は `YYYY-MM-DD`。
 - `parallel_task_limit`: 必須。`1` 以上の整数で、同時に進められるタスク数を表す。
+
+## holidays.csv
+
+ヘッダー:
+
+```csv
+date,name
+```
+
+ルール:
+
+- 存在すれば使用する。存在しない場合は土日のみを非営業日として扱う。
+- `date`: 必須。形式は `YYYY-MM-DD`。
+- `name`: 任意。祝日名や休業日の説明を書く。
+- 記載された日付は曜日に関わらず非営業日として扱う。
