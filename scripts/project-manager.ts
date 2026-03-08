@@ -6,6 +6,8 @@ import path from "node:path";
 const TASK_HEADERS = [
   "task_id",
   "title",
+  "summary",
+  "assignee_id",
   "estimate_days",
   "due_date",
   "priority",
@@ -14,9 +16,12 @@ const TASK_HEADERS = [
 ] as const;
 const PROJECT_HEADERS = ["project_name", "start_date", "parallel_task_limit"] as const;
 const HOLIDAY_HEADERS = ["date", "name"] as const;
+const MEMBER_HEADERS = ["member_id", "name", "specialties"] as const;
 const SCHEDULE_HEADERS = [
   "task_id",
   "title",
+  "summary",
+  "assignee_id",
   "status",
   "priority",
   "start_date",
@@ -43,6 +48,8 @@ type Status = "未着手" | "進行中" | "完了";
 type Task = {
   taskId: string;
   title: string;
+  summary: string;
+  assigneeId: string;
   estimateDays: number;
   dueDate: string;
   priority: Priority;
@@ -57,6 +64,12 @@ type Project = {
   parallelTaskLimit: number;
 };
 
+type Member = {
+  memberId: string;
+  name: string;
+  specialties: string;
+};
+
 type ScheduleEntry = {
   task: Task;
   startDate: string;
@@ -66,6 +79,7 @@ type ScheduleEntry = {
 type ValidationResult = {
   tasks: Task[];
   project: Project | null;
+  members: Member[];
   holidays: Set<string>;
   errors: string[];
   warnings: string[];
@@ -189,23 +203,29 @@ async function validateInputs(inputDir: string): Promise<ValidationResult> {
   const tasksPath = path.join(inputDir, "tasks.csv");
   const projectPath = path.join(inputDir, "project.csv");
   const holidaysPath = path.join(inputDir, "holidays.csv");
+  const membersPath = path.join(inputDir, "members.csv");
 
   const taskRows = await readCsvRows(tasksPath, TASK_HEADERS, errors, true);
   const projectRows = await readCsvRows(projectPath, PROJECT_HEADERS, errors, true);
-  if (errors.length > 0 || taskRows === null || projectRows === null) {
-    return { tasks: [], project: null, holidays: new Set(), errors, warnings };
+  const memberRows = await readCsvRows(membersPath, MEMBER_HEADERS, errors, true);
+  if (errors.length > 0 || taskRows === null || projectRows === null || memberRows === null) {
+    return { tasks: [], project: null, members: [], holidays: new Set(), errors, warnings };
   }
 
   const holidayRows = await readCsvRows(holidaysPath, HOLIDAY_HEADERS, errors, false);
   const tasks = parseTasks(tasksPath, taskRows.rows, errors, warnings);
   const project = parseProject(projectPath, projectRows.rows, errors, warnings);
+  const members = parseMembers(membersPath, memberRows.rows, errors, warnings);
   const holidays = parseHolidays(holidaysPath, holidayRows?.rows ?? [], errors, warnings);
 
   if (tasks.length > 0) {
     validateTaskDependencies(tasks, errors);
   }
+  if (tasks.length > 0 && members.length > 0) {
+    validateTaskAssignees(tasks, members, errors);
+  }
 
-  return { tasks, project, holidays, errors, warnings };
+  return { tasks, project, members, holidays, errors, warnings };
 }
 
 async function readCsvRows(
@@ -303,6 +323,8 @@ function parseTasks(
     const lineNo = index + 2;
     const taskId = row.task_id.trim();
     const title = row.title.trim();
+    const summary = row.summary.trim();
+    const assigneeId = row.assignee_id.trim();
     const estimateRaw = row.estimate_days.trim();
     const dueRaw = row.due_date.trim();
     const priority = row.priority.trim();
@@ -343,6 +365,8 @@ function parseTasks(
       tasks.push({
         taskId,
         title,
+        summary,
+        assigneeId,
         estimateDays,
         dueDate,
         priority: priority as Priority,
@@ -360,6 +384,45 @@ function parseTasks(
   }
 
   return tasks;
+}
+
+function parseMembers(
+  filePath: string,
+  rows: Record<string, string>[],
+  errors: string[],
+  warnings: string[],
+): Member[] {
+  const members: Member[] = [];
+  const seenIds = new Set<string>();
+  const nameCount = new Map<string, number>();
+
+  rows.forEach((row, index) => {
+    const lineNo = index + 2;
+    const memberId = row.member_id.trim();
+    const name = row.name.trim();
+    const specialties = row.specialties.trim();
+
+    if (memberId === "") {
+      errors.push(`${filePath}:${lineNo} invalid member_id: ${memberId}`);
+      return;
+    }
+    if (seenIds.has(memberId)) {
+      errors.push(`${filePath}:${lineNo} duplicate member_id: ${memberId}`);
+      return;
+    }
+
+    seenIds.add(memberId);
+    members.push({ memberId, name, specialties });
+    nameCount.set(name, (nameCount.get(name) ?? 0) + 1);
+  });
+
+  for (const [name, count] of [...nameCount.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    if (name !== "" && count > 1) {
+      warnings.push(`${filePath} duplicate name: ${name}`);
+    }
+  }
+
+  return members;
 }
 
 function parseProject(
@@ -484,6 +547,15 @@ function validateTaskDependencies(tasks: Task[], errors: string[]): void {
   }
 }
 
+function validateTaskAssignees(tasks: Task[], members: Member[], errors: string[]): void {
+  const memberIds = new Set(members.map((member) => member.memberId));
+  for (const task of tasks) {
+    if (task.assigneeId !== "" && !memberIds.has(task.assigneeId)) {
+      errors.push(`tasks.csv assignee_id references undefined member_id: ${task.taskId} -> ${task.assigneeId}`);
+    }
+  }
+}
+
 function buildSchedule(tasks: Task[], project: Project, holidays: Set<string>): ScheduleEntry[] {
   const scheduled = new Map<string, ScheduleEntry>();
   const orderedTasks = [...tasks].sort(taskSortKey);
@@ -510,6 +582,7 @@ function buildSchedule(tasks: Task[], project: Project, holidays: Set<string>): 
       }
 
       const startDate = findEarliestStart(
+        task,
         earliest,
         task.estimateDays,
         project.parallelTaskLimit,
@@ -567,6 +640,7 @@ function addBusinessDays(startDate: string, estimateDays: number, holidays: Set<
 }
 
 function findEarliestStart(
+  task: Task,
   earliest: string,
   estimateDays: number,
   parallelLimit: number,
@@ -576,7 +650,10 @@ function findEarliestStart(
   let candidate = nextBusinessDay(earliest, holidays);
   while (true) {
     const endDate = addBusinessDays(candidate, estimateDays, holidays);
-    if (respectsParallelLimit(candidate, endDate, parallelLimit, existingEntries, holidays)) {
+    if (
+      respectsParallelLimit(candidate, endDate, parallelLimit, existingEntries, holidays) &&
+      respectsAssigneeLimit(task, candidate, endDate, existingEntries, holidays)
+    ) {
       return candidate;
     }
     candidate = nextBusinessDay(addCalendarDays(candidate, 1), holidays);
@@ -605,6 +682,35 @@ function respectsParallelLimit(
     }
     current = addCalendarDays(current, 1);
   }
+  return true;
+}
+
+function respectsAssigneeLimit(
+  task: Task,
+  startDate: string,
+  endDate: string,
+  existingEntries: ScheduleEntry[],
+  holidays: Set<string>,
+): boolean {
+  if (task.assigneeId === "") {
+    return true;
+  }
+
+  let current = startDate;
+  while (current <= endDate) {
+    if (isBusinessDay(current, holidays)) {
+      for (const entry of existingEntries) {
+        if (entry.task.assigneeId !== task.assigneeId) {
+          continue;
+        }
+        if (entry.startDate <= current && current <= entry.endDate) {
+          return false;
+        }
+      }
+    }
+    current = addCalendarDays(current, 1);
+  }
+
   return true;
 }
 
@@ -642,6 +748,8 @@ async function writeScheduleCsv(filePath: string, schedule: ScheduleEntry[]): Pr
       [
         entry.task.taskId,
         escapeCsv(entry.task.title),
+        escapeCsv(entry.task.summary),
+        entry.task.assigneeId,
         entry.task.status,
         entry.task.priority,
         entry.startDate,
@@ -697,6 +805,8 @@ function parseScheduleRow(
   const lineNo = index + 2;
   const taskId = row.task_id.trim();
   const title = row.title.trim();
+  const summary = row.summary.trim();
+  const assigneeId = row.assignee_id.trim();
   const status = row.status.trim();
   const priority = row.priority.trim();
   const startDate = parseIsoDate(
@@ -732,6 +842,8 @@ function parseScheduleRow(
     task: {
       taskId,
       title,
+      summary,
+      assigneeId,
       estimateDays: businessDaysBetween(startDate, endDate),
       dueDate,
       priority: priority as Priority,

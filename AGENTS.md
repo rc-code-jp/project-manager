@@ -2,7 +2,7 @@
 
 ## プロジェクト構成とモジュール配置
 
-このリポジトリは、Codex CLI 向けの軽量なプロジェクト計画ワークフローを定義します。ルート直下には主要ドキュメントを置きます。[`README.md`](/Users/rc/work/project-manager/README.md) は入口、[`docs/spec.md`](/Users/rc/work/project-manager/docs/spec.md) は実装仕様、[`template/`](/Users/rc/work/project-manager/template) には入力用 CSV テンプレート（`tasks.csv`、`project.csv`、`holidays.csv`）と補足説明を配置します。実データは `data/`、生成物は `output/` に置き、どちらも Git 管理対象外です。
+このリポジトリは、Codex CLI 向けの軽量なプロジェクト計画ワークフローを定義します。ルート直下には主要ドキュメントを置きます。[`README.md`](/Users/rc/work/project-manager/README.md) は入口、[`docs/spec.md`](/Users/rc/work/project-manager/docs/spec.md) は実装仕様、[`template/`](/Users/rc/work/project-manager/template) には入力用 CSV テンプレート（`tasks.csv`、`project.csv`、`members.csv`、`holidays.csv`）と補足説明を配置します。実データは `data/`、生成物は `output/` に置き、どちらも Git 管理対象外です。
 
 ## ビルド・テスト・開発コマンド
 
@@ -10,7 +10,7 @@
 
 - `git status` : 変更対象と未追跡ファイルを確認する。
 - `git diff -- docs/spec.md template/ README.md` : 仕様書、テンプレート、README の差分を確認する。
-- `cat template/tasks.csv` または `sed -n '1,40p' template/README.md` : テンプレートのヘッダーや記述例を確認する。
+- `cat template/tasks.csv` または `sed -n '1,60p' template/README.md` : テンプレートのヘッダーや記述例を確認する。
 
 将来スクリプトを追加する場合は、リポジトリ直下から実行できる小さな単位に保ち、この節へ実行例を追記してください。
 
@@ -23,6 +23,7 @@ Markdown と CSV は簡潔に保ち、長い説明よりも更新しやすい記
 自動テストはまだありません。そのため、変更時はドキュメント、テンプレート、仕様書の整合を手動で確認してください。
 
 - テンプレートのヘッダーが仕様書と一致していること
+- `assignee_id` が `members.csv` の `member_id` を参照していること
 - 記載例の値が定義された形式を満たしていること
 - `.gitignore` により実データや生成物がコミットされないこと
 

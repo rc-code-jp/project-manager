@@ -16,6 +16,7 @@ description: Review and adjust the drafted schedule with AI assistance, update s
 ## 前提
 
 - `output/schedule.csv` と `output/gantt.mmd` が生成済みである
+- `assignee_id` の変更が必要な場合は `members.csv` を参照して `member_id` ベースで扱う
 - 調整内容は AI が提案・編集し、人間が最終確認する
 - 元の `data/` 入力は変更しない
 

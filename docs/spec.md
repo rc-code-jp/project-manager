@@ -27,8 +27,9 @@
 3. 利用者が計画生成用スキルを呼び出す。
 4. スキルがテンプレート準拠を確認し、営業日、依存関係、同時進行上限をもとに初稿計画を作る。
 5. 初稿として `schedule.csv` と `gantt.mmd` を生成する。
-6. 利用者または Codex が `schedule.csv` を見て調整する。
-7. スキルが `gantt.mmd` を再生成する。
+6. Codex が `tasks.csv` の概要と `members.csv` の得意分野をもとに `schedule.csv` の担当者 ID を割り振る。
+7. 利用者または Codex が `schedule.csv` を見て調整する。
+8. スキルが `gantt.mmd` を再生成する。
 
 ## 入力ファイル
 
@@ -36,12 +37,13 @@
 
 - `tasks.csv`
 - `project.csv`
+- `members.csv`
 
 ### 任意入力
 
 - `holidays.csv`
 
-`tasks.csv` と `project.csv` は必須とする。`holidays.csv` は存在すれば使用し、存在しない場合は土日のみを非営業日として扱う。
+`tasks.csv`、`project.csv`、`members.csv` は必須とする。`holidays.csv` は存在すれば使用し、存在しない場合は土日のみを非営業日として扱う。
 
 ## テンプレート配置
 
@@ -62,7 +64,7 @@
 ヘッダー:
 
 ```csv
-task_id,title,estimate_days,due_date,priority,depends_on,status
+task_id,title,summary,assignee_id,estimate_days,due_date,priority,depends_on,status
 ```
 
 各列の仕様:
@@ -75,6 +77,14 @@ task_id,title,estimate_days,due_date,priority,depends_on,status
   - タスク名。
   - 自由入力。
   - 重複を許可する。
+- `summary`
+  - タスク概要。
+  - 自由入力。
+  - AI が担当者を推定する際の主な判断材料に使う。
+- `assignee_id`
+  - 担当者 ID。
+  - `members.csv` の `member_id` を参照する。
+  - 空欄は未割り当てを表す。
 - `estimate_days`
   - タスク完了に必要な見積日数。
   - 整数のみ許可する。
@@ -100,6 +110,9 @@ task_id,title,estimate_days,due_date,priority,depends_on,status
 - 条件が同じ場合は上にある行を優先する。
 - `進行中` タスクも、MVP では残り日数を `estimate_days` のまま扱う。
 - `完了` タスクも出力対象に含める。
+- `assignee_id` は担当者制約の識別子として保持する。
+- 同じ `assignee_id` のタスクは同一営業日に 1 件までしか進められない。
+- 負荷平準化や稼働率最適化までは行わない。
 
 ### project.csv
 
@@ -127,6 +140,27 @@ project_name,start_date,parallel_task_limit
 追加ルール:
 
 - `project.csv` はヘッダーに続く 1 行のみを有効データとして扱う。
+
+### members.csv
+
+ヘッダー:
+
+```csv
+member_id,name,specialties
+```
+
+各列の仕様:
+
+- `member_id`
+  - 担当者の一意識別子。
+  - `tasks.csv` の `assignee_id` から参照されるキーである。
+- `name`
+  - 担当者名。
+  - 同名を許可する。
+- `specialties`
+  - 得意分野。
+  - `|` 区切りのキーワード列でも自然文でもよい。
+  - AI が自動割当する際の判断材料に使う。
 
 ### holidays.csv
 
@@ -168,7 +202,9 @@ date,name
 - 納期遵守を最優先とする。
 - 依存関係の整合性を必須条件とする。
 - `parallel_task_limit` を超える同時進行は認めない。
+- 同じ `assignee_id` を持つタスクの同時進行は認めない。
 - タスクの自動分解は行わない。
+- 担当者情報は `assignee_id` ベースでスケジューリング制約に使う。
 
 ### 実行可能条件
 
@@ -177,6 +213,7 @@ date,name
 - すべての依存先タスクが完了済みである。
 - 開始日が営業日である。
 - その営業日時点の同時進行数が `parallel_task_limit` 未満である。
+- `assignee_id` が空欄でない場合、その担当者が同一営業日に別タスクを実行していない。
 
 ### 優先順位
 
@@ -192,12 +229,14 @@ date,name
 - 各タスクの開始日は、依存関係と空き枠を満たす最も早い営業日とする。
 - 終了日は開始日を 1 日目として `estimate_days` 分の営業日を数えた日とする。
 - 依存先タスクを持つタスクは、すべての依存先タスクの終了日の翌営業日以降で開始可能とする。
+- `assignee_id` が設定されているタスクは、同じ担当者の既存タスク期間と重ならない最も早い営業日に開始する。
 
 ### status の扱い
 
 - `未着手` と `進行中` は、MVP では同じ日数計算ルールで扱う。
 - `完了` はガント出力対象に含める。
 - `status` はガント出力上の表示状態にも反映する。
+- 担当者情報は `assignee_id` として保持するが、現行の自動スケジューリング制約には使わない。
 
 ## 検証仕様
 
@@ -207,11 +246,13 @@ date,name
 - 必須列が欠けている。
 - `task_id` の形式が不正。
 - `task_id` が重複している。
+- `member_id` が空欄または重複している。
 - `estimate_days` が整数でない、または `1` 未満である。
 - `due_date`、`start_date`、`holidays.csv` の `date` が日付形式でない。
 - `priority` が `低`、`中`、`高` 以外である。
 - `status` が `未着手`、`進行中`、`完了` 以外である。
 - `depends_on` に未定義の `task_id` が含まれる。
+- `assignee_id` に未定義の `member_id` が含まれる。
 - 依存関係が循環している。
 - `parallel_task_limit` が `1` 未満、または整数でない。
 
@@ -220,6 +261,7 @@ date,name
 - 計画結果として `due_date` を超過するタスクがある。
 - `holidays.csv` に重複日付がある。
 - `title` が重複している。
+- `members.csv` に同名の `name` がある。
 
 ## 出力仕様
 
@@ -257,19 +299,22 @@ Mermaid 状態マッピング:
 初稿生成後も AI 調整後も、以下の列で出力する。
 
 ```csv
-task_id,title,status,priority,start_date,end_date,due_date,depends_on
+task_id,title,summary,assignee_id,status,priority,start_date,end_date,due_date,depends_on
 ```
 
 ### AI 調整方針
 
 - スクリプトは制約を満たす初稿生成までを責務とする。
 - AI は初稿に対する調整提案、順序見直し、説明生成を担当する。
+- AI は `summary` と `members.csv` の `specialties` を参照して `assignee_id` の候補提示または自動入力も担当する。
 - AI が調整した結果をガント化するために、`schedule.csv` から `gantt.mmd` を再生成できなければならない。
 
 各列の意味:
 
 - `task_id`: 元タスク ID
 - `title`: 元タスク名
+- `summary`: 元タスク概要
+- `assignee_id`: 担当者 ID
 - `status`: 元タスク状態
 - `priority`: 元優先度
 - `start_date`: 算出された開始日
@@ -295,6 +340,12 @@ task_id,title,status,priority,start_date,end_date,due_date,depends_on
 - `schedule.csv` と `gantt.mmd` を生成する。
 - タスク分解は行わず、入力タスク単位のまま計画する。
 
+### ai-assign
+
+- `members.csv` の得意分野とタスク概要をもとに担当者 ID を割り振る。
+- `schedule.csv` の `assignee_id` を更新し、必要なら判断理由を残す。
+- 担当者名ではなく `member_id` を唯一の識別子として扱う。
+
 ### ai-adjust
 
 - `draft-plan` の結果に対して、並び順や期限リスクを見直す。
@@ -311,12 +362,12 @@ task_id,title,status,priority,start_date,end_date,due_date,depends_on
 
 1. `validate` でテンプレート準拠、欠損、不整合を確認する。
 2. `draft-plan` で営業日と `parallel_task_limit` を満たす初稿スケジュール案を作る。
-3. `ai-adjust` で初稿を見直し、`schedule.csv` を更新する。
-4. `render` で `gantt.mmd` を生成する。
+3. `ai-assign` で担当者 ID を割り振り、`schedule.csv` を更新する。
+4. `ai-adjust` で初稿を見直し、必要なら `schedule.csv` を更新する。
+5. `render` で `gantt.mmd` を生成する。
 
 ## 非対象
 
-- 担当者割当
 - 実績工数の反映
 - 祝日以外の複雑なカレンダー例外
 - GUI 提供

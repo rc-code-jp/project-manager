@@ -3,11 +3,14 @@
 AI を利用して、CSV から軽量なプロジェクト計画を生成し、初稿から調整版まで管理する。
 
 実タスクや実名は Git 管理せず、テンプレートをコピーして利用する。
+担当者は `members.csv` の `member_id` で管理し、タスク概要から AI が `assignee_id` を割り振れるようにする。
 
 ## できること
 
-- `tasks.csv`、`project.csv`、`holidays.csv` の妥当性確認
+- `tasks.csv`、`project.csv`、`members.csv`、`holidays.csv` の妥当性確認
 - 営業日、依存関係、同時進行上限に基づく初稿スケジュール生成
+- 担当者ごとの同時実行を 1 タスクに制限した初稿スケジュール生成
+- タスク概要と担当者の得意分野に基づく AI 担当割当
 - AI によるスケジュール調整
 - Mermaid `gantt` 形式の初稿・調整後ガント出力
 
@@ -24,8 +27,9 @@ AI を利用して、CSV から軽量なプロジェクト計画を生成し、�
 1. `template/` 配下の CSV を `data/` にコピーして更新する。
 2. 妥当性確認を実行する。
 3. 問題がなければ初稿生成を実行する。
-4. `output/schedule.csv` を AI に調整させる。
-5. 調整後ガントを再生成して確認する。
+4. `data/members.csv` と `output/schedule.csv` をもとに AI が `assignee_id` を割り振る。
+5. 必要なら `output/schedule.csv` を AI に調整させる。
+6. 調整後ガントを再生成して確認する。
 
 ### 妥当性確認
 
@@ -43,6 +47,31 @@ npm run draft -- --input-dir data --output-dir output
 
 - `output/schedule.csv`
 - `output/gantt.mmd`
+
+### AI 担当割当
+
+`data/members.csv` の得意分野と `tasks.csv` の `summary` をもとに、Codex に `output/schedule.csv` の `assignee_id` を割り振らせる。
+ワークフローは [ai-assign](/Users/rc/work/project-manager/.agents/skills/ai-assign/SKILL.md) に定義する。
+
+実行前に確認するファイル:
+
+- `data/members.csv`: `member_id`、`name`、`specialties`
+- `data/tasks.csv`: `task_id`、`title`、`summary`
+- `output/schedule.csv`: `assignee_id` を更新する対象
+
+Codex への依頼例:
+
+```text
+ai-assign を使って担当者を割り振ってください。
+data/members.csv の specialties と output/schedule.csv の summary を見て、
+各タスクの assignee_id を埋めてください。迷うものは assignment_notes.md に理由を書いてください。
+```
+
+実行後に確認する点:
+
+- `output/schedule.csv` の `assignee_id` が `data/members.csv` の `member_id` と一致していること
+- 未割当タスクがあれば理由が `output/assignment_notes.md` に残っていること
+- 担当割当後にガントを更新する場合は次の `render` を実行すること
 
 ### 調整後ガント再生成
 
