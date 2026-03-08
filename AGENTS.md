@@ -10,7 +10,7 @@
 
 - `git status` : 変更対象と未追跡ファイルを確認する。
 - `git diff -- docs/spec.md template/ README.md` : 仕様書、テンプレート、README の差分を確認する。
-- `cat template/tasks.csv` または `sed -n '1,60p' template/README.md` : テンプレートのヘッダーや記述例を確認する。
+- `cat template/tasks.csv`、`cat template/members.csv` または `sed -n '1,80p' template/README.md` : テンプレートのヘッダーや記述例を確認する。
 
 将来スクリプトを追加する場合は、リポジトリ直下から実行できる小さな単位に保ち、この節へ実行例を追記してください。
 
@@ -24,6 +24,7 @@ Markdown と CSV は簡潔に保ち、長い説明よりも更新しやすい記
 
 - テンプレートのヘッダーが仕様書と一致していること
 - `assignee_id` が `members.csv` の `member_id` を参照していること
+- メンバーの稼働期間が `available_from` から `available_until` の形式で記載されていること
 - 記載例の値が定義された形式を満たしていること
 - `.gitignore` により実データや生成物がコミットされないこと
 

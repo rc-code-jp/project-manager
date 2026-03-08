@@ -1,11 +1,11 @@
 ---
 name: ai-assign
-description: Assign task owners by matching task summaries to member specialties and update schedule.csv with assignee_id values.
+description: Assign task owners by matching task summaries to member specialties and availability, then update schedule.csv with assignee_id values.
 ---
 
 # AI Assign Skill
 
-`members.csv` の得意分野とタスク概要をもとに、担当者 ID を `schedule.csv` に反映する。
+`members.csv` の得意分野と稼働期間、タスク概要をもとに、担当者 ID を `schedule.csv` に反映する。
 
 ## 目的
 
@@ -21,7 +21,7 @@ description: Assign task owners by matching task summaries to member specialties
 
 ## 実行フロー
 
-1. `data/members.csv` の `member_id`、`name`、`specialties` を確認する
+1. `data/members.csv` の `member_id`、`name`、`specialties`、`available_from`、`available_until` を確認する
 2. `output/schedule.csv` の `title`、`summary`、`priority`、`due_date` を確認する
 3. 各タスクに最も適した `assignee_id` を埋める
 4. 判断が迷うタスクや根拠は `output/assignment_notes.md` に残す
@@ -30,6 +30,7 @@ description: Assign task owners by matching task summaries to member specialties
 
 - 同名でも必ず `member_id` で判断する
 - `summary` と `specialties` の意味的な一致を優先する
+- 稼働期間外のメンバーは候補から外す
 - すでに `assignee_id` が入っているタスクは、明確な不一致がない限り維持してよい
 - 現行 MVP では担当者ごとの負荷平準化は行わない
 

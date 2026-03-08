@@ -9,7 +9,7 @@ description: Generate an initial project schedule and gantt output from validate
 
 ## 目的
 
-- 営業日、依存関係、同時進行上限、担当者の同時実行 1 タスク制約に基づく初稿日程を決める
+- 営業日、依存関係、稼働可能メンバー数、担当者の同時実行 1 タスク制約、メンバー稼働期間に基づく初稿日程を決める
 - AI 調整のたたき台として `schedule.csv` を生成する
 - AI 担当割当のたたき台として `summary` と `assignee_id` を含む `schedule.csv` を生成する
 - 初稿ガント `gantt.mmd` を生成する

@@ -8,11 +8,11 @@ AI を利用して、CSV から軽量なプロジェクト計画を生成し、�
 ## できること
 
 - `tasks.csv`、`project.csv`、`members.csv`、`holidays.csv` の妥当性確認
-- 営業日、依存関係、同時進行上限に基づく初稿スケジュール生成
-- 担当者ごとの同時実行を 1 タスクに制限した初稿スケジュール生成
+- 営業日、依存関係、メンバー数に基づく初稿スケジュール生成
+- 担当者ごとの同時実行を 1 タスクに制限し、メンバーの稼働期間を考慮した初稿スケジュール生成
 - タスク概要と担当者の得意分野に基づく AI 担当割当
 - AI によるスケジュール調整
-- Mermaid `gantt` 形式の初稿・調整後ガント出力
+- 担当者 ID 付きの Mermaid `gantt` 形式で初稿・調整後ガント出力
 
 ## ディレクトリ
 
@@ -50,12 +50,12 @@ npm run draft -- --input-dir data --output-dir output
 
 ### AI 担当割当
 
-`data/members.csv` の得意分野と `tasks.csv` の `summary` をもとに、Codex に `output/schedule.csv` の `assignee_id` を割り振らせる。
+`data/members.csv` の得意分野と稼働期間、`tasks.csv` の `summary` をもとに、Codex に `output/schedule.csv` の `assignee_id` を割り振らせる。
 ワークフローは [ai-assign](/Users/rc/work/project-manager/.agents/skills/ai-assign/SKILL.md) に定義する。
 
 実行前に確認するファイル:
 
-- `data/members.csv`: `member_id`、`name`、`specialties`
+- `data/members.csv`: `member_id`、`name`、`specialties`、`available_from`、`available_until`
 - `data/tasks.csv`: `task_id`、`title`、`summary`
 - `output/schedule.csv`: `assignee_id` を更新する対象
 

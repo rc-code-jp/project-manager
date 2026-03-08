@@ -25,13 +25,14 @@ task_id,title,summary,assignee_id,estimate_days,due_date,priority,depends_on,sta
 - `完了` タスクもガントチャートに含める。
 - `進行中` タスクも、MVP では残り日数を `estimate_days` のまま扱う。
 - `assignee_id` はスケジューリングにも使う。同じ担当者は同一営業日に 1 タスクまでしか担当できない。
+- 同時実行可能なタスク数は `members.csv` にいる、その営業日に稼働可能なメンバー数と同じとみなす。
 
 ## members.csv
 
 ヘッダー:
 
 ```csv
-member_id,name,specialties
+member_id,name,specialties,available_from,available_until
 ```
 
 ルール:
@@ -39,13 +40,16 @@ member_id,name,specialties
 - `member_id`: 担当者の一意識別子。`tasks.csv` の `assignee_id` から参照する。
 - `name`: 表示名。同名を許可する。
 - `specialties`: 得意分野。`|` 区切りでも自然文でもよい。AI 割当時の判断材料に使う。
+- `available_from`: 稼働開始日。形式は `YYYY-MM-DD`。
+- `available_until`: 稼働終了日。形式は `YYYY-MM-DD`。
+- 各メンバーは `available_from` から `available_until` の期間中しか稼働できない。
 
 ## project.csv
 
 ヘッダー:
 
 ```csv
-project_name,start_date,parallel_task_limit
+project_name,start_date
 ```
 
 ルール:
@@ -53,7 +57,7 @@ project_name,start_date,parallel_task_limit
 - 1 行だけの設定ファイルとして扱う。
 - `project_name`: 自由入力。
 - `start_date`: 必須。形式は `YYYY-MM-DD`。
-- `parallel_task_limit`: 必須。`1` 以上の整数で、同時に進められるタスク数を表す。
+- 同時実行可能なタスク数は `members.csv` の稼働可能メンバー数から自動判定する。
 
 ## holidays.csv
 
