@@ -1,5 +1,5 @@
-task_id,title,estimate_days,due_date,priority,depends_on,status
-TASK-001,要件整理,3,2026-03-12,高,,完了
-TASK-002,画面設計,4,2026-03-18,中,TASK-001,進行中
-TASK-003,実装,5,2026-03-26,高,TASK-002,未着手
-TASK-004,テスト,2,2026-03-28,中,TASK-003,未着手
+task_id,title,summary,assignee_id,estimate_days,due_date,priority,depends_on,status
+TASK-001,要件整理,利用者要望を整理してスコープを確定する,MEM-001,3,2026-03-12,高,,完了
+TASK-002,画面設計,主要画面の導線とワイヤーフレームを作る,MEM-002,4,2026-03-18,中,TASK-001,進行中
+TASK-003,実装,画面と API の主要機能を実装する,,5,2026-03-26,高,TASK-002,未着手
+TASK-004,テスト,主要シナリオの動作確認と不具合修正を行う,,2,2026-03-28,中,TASK-003,未着手

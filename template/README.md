@@ -1,19 +1,21 @@
 # Template Format
 
-`template/tasks.csv`、`template/project.csv`、`template/holidays.csv` は、Codex CLI から計画スキルを呼び出すための最小入力テンプレートです。
+`template/tasks.csv`、`template/project.csv`、`template/members.csv`、`template/holidays.csv` は、Codex CLI から計画スキルを呼び出すための最小入力テンプレートです。
 
 ## tasks.csv
 
 ヘッダー:
 
 ```csv
-task_id,title,estimate_days,due_date,priority,depends_on,status
+task_id,title,summary,assignee_id,estimate_days,due_date,priority,depends_on,status
 ```
 
 ルール:
 
 - `task_id`: `TASK-001` 形式で固定する。
 - `title`: 自由入力。重複可。識別は `task_id` のみで行う。
+- `summary`: タスク概要。AI が担当者を割り振る際の判断材料に使う。
+- `assignee_id`: 担当者 ID。`members.csv` の `member_id` を参照する。空欄は未割り当てとして扱う。
 - `estimate_days`: 整数のみ。
 - `due_date`: 必須。形式は `YYYY-MM-DD`。
 - `priority`: `低`、`中`、`高` の完全一致のみ許可する。
@@ -22,13 +24,32 @@ task_id,title,estimate_days,due_date,priority,depends_on,status
 - 行順は補助的な優先順位として扱う。同条件なら上の行を優先する。
 - `完了` タスクもガントチャートに含める。
 - `進行中` タスクも、MVP では残り日数を `estimate_days` のまま扱う。
+- `assignee_id` はスケジューリングにも使う。同じ担当者は同一営業日に 1 タスクまでしか担当できない。
+- 同時実行可能なタスク数は `members.csv` にいる、その営業日に稼働可能なメンバー数と同じとみなす。
+
+## members.csv
+
+ヘッダー:
+
+```csv
+member_id,name,specialties,available_from,available_until
+```
+
+ルール:
+
+- `member_id`: 担当者の一意識別子。`tasks.csv` の `assignee_id` から参照する。
+- `name`: 表示名。同名を許可する。
+- `specialties`: 得意分野。`|` 区切りでも自然文でもよい。AI 割当時の判断材料に使う。
+- `available_from`: 稼働開始日。形式は `YYYY-MM-DD`。
+- `available_until`: 稼働終了日。形式は `YYYY-MM-DD`。
+- 各メンバーは `available_from` から `available_until` の期間中しか稼働できない。
 
 ## project.csv
 
 ヘッダー:
 
 ```csv
-project_name,start_date,parallel_task_limit
+project_name,start_date
 ```
 
 ルール:
@@ -36,7 +57,7 @@ project_name,start_date,parallel_task_limit
 - 1 行だけの設定ファイルとして扱う。
 - `project_name`: 自由入力。
 - `start_date`: 必須。形式は `YYYY-MM-DD`。
-- `parallel_task_limit`: 必須。`1` 以上の整数で、同時に進められるタスク数を表す。
+- 同時実行可能なタスク数は `members.csv` の稼働可能メンバー数から自動判定する。
 
 ## holidays.csv
 

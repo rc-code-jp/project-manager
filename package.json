@@ -1,0 +1,19 @@
+{
+  "name": "project-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "validate": "node --import tsx scripts/project-manager.ts validate",
+    "draft": "node --import tsx scripts/project-manager.ts draft",
+    "render": "node --import tsx scripts/project-manager.ts render",
+    "test": "node --import tsx --test tests/project-manager.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0"
+  }
+}
