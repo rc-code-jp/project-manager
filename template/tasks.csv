@@ -1,0 +1,5 @@
+task_id,title,estimate_days,due_date,priority,depends_on,status
+TASK-001,要件整理,3,2026-03-12,高,,完了
+TASK-002,画面設計,4,2026-03-18,中,TASK-001,進行中
+TASK-003,実装,5,2026-03-26,高,TASK-002,未着手
+TASK-004,テスト,2,2026-03-28,中,TASK-003,未着手
