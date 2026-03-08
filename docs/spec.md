@@ -2,13 +2,13 @@
 
 ## 目的
 
-本仕様書は、`Codex CLI` 上で動作するプロジェクト計画支援スキル群の MVP を実装するための基準文書である。手動更新した CSV を入力として、妥当性確認、スケジュール生成、`gantt.mmd` 出力までを一貫して定義する。
+本仕様書は、`Codex CLI` 上で動作するプロジェクト計画支援スキル群の MVP を実装するための基準文書である。手動更新した CSV を入力として、妥当性確認、初稿スケジュール生成、AI による調整、Mermaid 出力までを一貫して定義する。
 
 ## 対象範囲
 
 - 対象実行環境は `Codex CLI` のみとする。
 - 利用者は手動で `codex` を起動し、スキルを呼び出す。
-- MVP の主目的は、入力 CSV の妥当性確認、スケジュール生成、Mermaid 形式ガントチャート生成である。
+- MVP の主目的は、入力 CSV の妥当性確認、ルールベース初稿生成、AI 調整、Mermaid 形式ガントチャート生成である。
 - 専用アプリケーション、GUI、Web API は作成しない。
 
 ## 実装原則
@@ -25,8 +25,10 @@
 1. 利用者が `template/` 配下のテンプレートを元に、実データ用 CSV を手動で更新する。
 2. 利用者が `Codex CLI` を手動で起動する。
 3. 利用者が計画生成用スキルを呼び出す。
-4. スキルがテンプレート準拠を確認し、営業日、依存関係、同時進行上限をもとに計画を作る。
-5. スキルが `gantt.mmd` を生成し、必要に応じて `schedule.csv` を出力する。
+4. スキルがテンプレート準拠を確認し、営業日、依存関係、同時進行上限をもとに初稿計画を作る。
+5. 初稿として `schedule.csv` と `gantt.mmd` を生成する。
+6. 利用者または Codex が `schedule.csv` を見て調整する。
+7. スキルが `gantt.mmd` を再生成する。
 
 ## 入力ファイル
 
@@ -49,7 +51,7 @@
 
 ## ディレクトリ方針
 
-- スキル本体はリポジトリ直下または `skills/` 配下に配置してよい。
+- スキル本体はリポジトリ直下または `.agents/skills/` 配下に配置してよい。
 - 反復利用する検証や整形処理がある場合のみ、補助スクリプトを追加してよい。
 - 入力テンプレート、仕様書、サンプル出力がリポジトリ内に揃っており、`Codex CLI` 単体で試せる状態であること。
 
@@ -221,25 +223,24 @@ date,name
 
 ## 出力仕様
 
-### 必須出力
-
-- `gantt.mmd`
-
-### 任意出力
+### 出力
 
 - `schedule.csv`
+- `gantt.mmd`
+- 必要に応じて `adjustment_notes.md`
 
 出力共通ルール:
 
 - 入力 CSV を上書きしない。
 - 生成物は再生成可能であること。
-- `schedule.csv` を出力する場合、その内容と `gantt.mmd` の開始日、終了日、タスク順が一致していなければならない。
+- `schedule.csv` と `gantt.mmd` の開始日、終了日、タスク順は一致していなければならない。
+- AI 調整は `data/` 配下の元入力ではなく、`output/` 配下の生成物に対して行う。
 
 ### gantt.mmd
 
 - Mermaid の標準 `gantt` 構文で出力する。
 - 各タスクは `title :task_id, status, start, end` 形式で出力する。
-- `status` は `tasks.csv` の値を Mermaid 表現にマッピングして出力する。
+- `status` はスケジュール CSV の `status` を Mermaid 表現にマッピングして出力する。
 
 Mermaid 状態マッピング:
 
@@ -253,11 +254,17 @@ Mermaid 状態マッピング:
 
 ### schedule.csv
 
-実装時の中間成果物として必要な場合は、以下の列で出力する。
+初稿生成後も AI 調整後も、以下の列で出力する。
 
 ```csv
 task_id,title,status,priority,start_date,end_date,due_date,depends_on
 ```
+
+### AI 調整方針
+
+- スクリプトは制約を満たす初稿生成までを責務とする。
+- AI は初稿に対する調整提案、順序見直し、説明生成を担当する。
+- AI が調整した結果をガント化するために、`schedule.csv` から `gantt.mmd` を再生成できなければならない。
 
 各列の意味:
 
@@ -274,31 +281,25 @@ task_id,title,status,priority,start_date,end_date,due_date,depends_on
 
 本 MVP で定義するスキルは以下の通りとする。
 
-### project-intake
+### validate
 
 - 入力ファイルの存在確認を行う。
 - CSV ヘッダーと値がテンプレート仕様に従うか確認する。
 - 不足情報、不正値、循環依存を検出する。
 - 失敗時は、どのファイルのどの列に問題があるかを明示する。
 
-### task-planning
+### draft-plan
 
 - 妥当な入力をもとに開始日と終了日を算出する。
 - 依存関係、営業日、`parallel_task_limit`、優先順位を考慮する。
-- `schedule.csv` 相当の構造化結果を生成できる状態にする。
+- `schedule.csv` と `gantt.mmd` を生成する。
 - タスク分解は行わず、入力タスク単位のまま計画する。
 
-### plan-review
+### ai-adjust
 
-- `task-planning` の結果に対して、期限超過や同時進行上限違反などのリスクを検査する。
-- MVP 実装では補助的な位置づけとし、必須出力生成の前提ではない。
-- 実装する場合は、警告一覧またはレビュー結果を人が読める形で返す。
-
-### gantt-output
-
-- スケジュール結果から `gantt.mmd` を生成する。
-- `status` を Mermaid 表示状態に変換する。
-- 出力日付の整合を保証する。
+- `draft-plan` の結果に対して、並び順や期限リスクを見直す。
+- `schedule.csv` を直接更新し、必要なら `adjustment_notes.md` を作る。
+- `render` コマンドを用いて `gantt.mmd` を再生成する。
 
 ## スキル定義要件
 
@@ -308,10 +309,10 @@ task_id,title,status,priority,start_date,end_date,due_date,depends_on
 
 ## 標準ワークフロー
 
-1. `project-intake` でテンプレート準拠、欠損、不整合を確認する。
-2. `task-planning` で営業日と `parallel_task_limit` を満たすスケジュール案を作る。
-3. 必要に応じて `plan-review` で明らかなリスクを確認する。
-4. `gantt-output` で `gantt.mmd` を生成する。
+1. `validate` でテンプレート準拠、欠損、不整合を確認する。
+2. `draft-plan` で営業日と `parallel_task_limit` を満たす初稿スケジュール案を作る。
+3. `ai-adjust` で初稿を見直し、`schedule.csv` を更新する。
+4. `render` で `gantt.mmd` を生成する。
 
 ## 非対象
 

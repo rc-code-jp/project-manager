@@ -14,14 +14,24 @@ const TASK_HEADERS = [
 ] as const;
 const PROJECT_HEADERS = ["project_name", "start_date", "parallel_task_limit"] as const;
 const HOLIDAY_HEADERS = ["date", "name"] as const;
+const SCHEDULE_HEADERS = [
+  "task_id",
+  "title",
+  "status",
+  "priority",
+  "start_date",
+  "end_date",
+  "due_date",
+  "depends_on",
+] as const;
 const TASK_ID_PATTERN = /^TASK-\d{3}$/;
-const ALLOWED_PRIORITIES = new Map([
+const ALLOWED_PRIORITIES = new Map<Priority, number>([
   ["低", 1],
   ["中", 2],
   ["高", 3],
 ]);
-const ALLOWED_STATUSES = new Set(["未着手", "進行中", "完了"]);
-const MERMAID_STATUS = new Map([
+const ALLOWED_STATUSES = new Set<Status>(["未着手", "進行中", "完了"]);
+const MERMAID_STATUS = new Map<Status, string>([
   ["未着手", ""],
   ["進行中", "active"],
   ["完了", "done"],
@@ -67,14 +77,26 @@ type CsvRows = {
 };
 
 type ParsedArgs = {
-  command: "validate" | "plan";
+  command: "validate" | "draft" | "render";
   inputDir: string;
   outputDir: string;
-  writeSchedule: boolean;
+  projectFile: string;
+  scheduleFile: string;
+  outputFile: string;
 };
 
 async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
+
+  if (args.command === "render") {
+    const project = await readProjectFile(args.projectFile);
+    const schedule = await readScheduleFile(args.scheduleFile);
+    await mkdir(path.dirname(args.outputFile), { recursive: true });
+    await writeGantt(args.outputFile, project, schedule);
+    console.log(`Generated ${args.outputFile}`);
+    return 0;
+  }
+
   const validation = await validateInputs(args.inputDir);
   printValidationSummary(validation);
 
@@ -92,30 +114,32 @@ async function main(argv: string[]): Promise<number> {
   }
 
   await mkdir(args.outputDir, { recursive: true });
-  await writeGantt(path.join(args.outputDir, "gantt.mmd"), validation.project, schedule);
-  console.log(`Generated ${path.join(args.outputDir, "gantt.mmd")}`);
-
-  if (args.writeSchedule) {
-    await writeScheduleCsv(path.join(args.outputDir, "schedule.csv"), schedule);
-    console.log(`Generated ${path.join(args.outputDir, "schedule.csv")}`);
-  }
-
+  const schedulePath = path.join(args.outputDir, "schedule.csv");
+  const ganttPath = path.join(args.outputDir, "gantt.mmd");
+  await writeScheduleCsv(schedulePath, schedule);
+  console.log(`Generated ${schedulePath}`);
+  await writeGantt(ganttPath, validation.project, schedule);
+  console.log(`Generated ${ganttPath}`);
   return 0;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
   if (argv.length === 0) {
-    throw new Error("Usage: project-manager <validate|plan> [--input-dir DIR] [--output-dir DIR] [--write-schedule]");
+    throw new Error(
+      "Usage: project-manager <validate|draft|render> [--input-dir DIR] [--output-dir DIR] [--project-file FILE] [--schedule-file FILE] [--output-file FILE]",
+    );
   }
 
   const command = argv[0];
-  if (command !== "validate" && command !== "plan") {
+  if (command !== "validate" && command !== "draft" && command !== "render") {
     throw new Error(`Unknown command: ${command}`);
   }
 
   let inputDir = "data";
   let outputDir = "output";
-  let writeSchedule = false;
+  let projectFile = path.join("data", "project.csv");
+  let scheduleFile = path.join("output", "schedule.csv");
+  let outputFile = path.join("output", "gantt.mmd");
 
   for (let index = 1; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -129,14 +153,25 @@ function parseArgs(argv: string[]): ParsedArgs {
       index += 1;
       continue;
     }
-    if (arg === "--write-schedule") {
-      writeSchedule = true;
+    if (arg === "--project-file") {
+      projectFile = requireValue(argv, index, arg);
+      index += 1;
+      continue;
+    }
+    if (arg === "--schedule-file") {
+      scheduleFile = requireValue(argv, index, arg);
+      index += 1;
+      continue;
+    }
+    if (arg === "--output-file") {
+      outputFile = requireValue(argv, index, arg);
+      index += 1;
       continue;
     }
     throw new Error(`Unknown argument: ${arg}`);
   }
 
-  return { command, inputDir, outputDir, writeSchedule };
+  return { command, inputDir, outputDir, projectFile, scheduleFile, outputFile };
 }
 
 function requireValue(argv: string[], index: number, flag: string): string {
@@ -182,7 +217,7 @@ async function readCsvRows(
   let content: string;
   try {
     content = await readFile(filePath, "utf8");
-  } catch (error) {
+  } catch {
     if (required) {
       errors.push(`Required file is missing: ${filePath}`);
     }
@@ -271,10 +306,7 @@ function parseTasks(
     const estimateRaw = row.estimate_days.trim();
     const dueRaw = row.due_date.trim();
     const priority = row.priority.trim();
-    const dependsOn = row.depends_on
-      .split("|")
-      .map((value) => value.trim())
-      .filter(Boolean);
+    const dependsOn = row.depends_on.split("|").map((value) => value.trim()).filter(Boolean);
     const status = row.status.trim();
 
     if (!TASK_ID_PATTERN.test(taskId)) {
@@ -285,13 +317,17 @@ function parseTasks(
       seenIds.add(taskId);
     }
 
-    const estimateDays = parsePositiveInt(estimateRaw, `${filePath}:${lineNo} invalid estimate_days: ${estimateRaw}`, errors);
+    const estimateDays = parsePositiveInt(
+      estimateRaw,
+      `${filePath}:${lineNo} invalid estimate_days: ${estimateRaw}`,
+      errors,
+    );
     const dueDate = parseIsoDate(dueRaw, `${filePath}:${lineNo} invalid due_date: ${dueRaw}`, errors);
 
-    if (!ALLOWED_PRIORITIES.has(priority)) {
+    if (!ALLOWED_PRIORITIES.has(priority as Priority)) {
       errors.push(`${filePath}:${lineNo} invalid priority: ${priority}`);
     }
-    if (!ALLOWED_STATUSES.has(status)) {
+    if (!ALLOWED_STATUSES.has(status as Status)) {
       errors.push(`${filePath}:${lineNo} invalid status: ${status}`);
     }
 
@@ -301,8 +337,8 @@ function parseTasks(
       TASK_ID_PATTERN.test(taskId) &&
       estimateDays !== null &&
       dueDate !== null &&
-      ALLOWED_PRIORITIES.has(priority) &&
-      ALLOWED_STATUSES.has(status)
+      ALLOWED_PRIORITIES.has(priority as Priority) &&
+      ALLOWED_STATUSES.has(status as Status)
     ) {
       tasks.push({
         taskId,
@@ -341,7 +377,11 @@ function parseProject(
   }
 
   const row = rows[0];
-  const startDate = parseIsoDate(row.start_date.trim(), `${filePath}:2 invalid start_date: ${row.start_date.trim()}`, errors);
+  const startDate = parseIsoDate(
+    row.start_date.trim(),
+    `${filePath}:2 invalid start_date: ${row.start_date.trim()}`,
+    errors,
+  );
   const parallelTaskLimit = parsePositiveInt(
     row.parallel_task_limit.trim(),
     `${filePath}:2 invalid parallel_task_limit: ${row.parallel_task_limit.trim()}`,
@@ -477,7 +517,6 @@ function buildSchedule(tasks: Task[], project: Project, holidays: Set<string>): 
         holidays,
       );
       const endDate = addBusinessDays(startDate, task.estimateDays, holidays);
-
       scheduled.set(task.taskId, { task, startDate, endDate });
       progress = true;
     }
@@ -572,10 +611,7 @@ function respectsParallelLimit(
 function buildDueDateWarnings(schedule: ScheduleEntry[]): string[] {
   return schedule
     .filter((entry) => entry.endDate > entry.task.dueDate)
-    .map(
-      (entry) =>
-        `Task ${entry.task.taskId} ends on ${entry.endDate} after due_date ${entry.task.dueDate}`,
-    );
+    .map((entry) => `Task ${entry.task.taskId} ends on ${entry.endDate} after due_date ${entry.task.dueDate}`);
 }
 
 async function writeGantt(filePath: string, project: Project, schedule: ScheduleEntry[]): Promise<void> {
@@ -591,9 +627,9 @@ async function writeGantt(filePath: string, project: Project, schedule: Schedule
     const mermaidStatus = MERMAID_STATUS.get(entry.task.status) ?? "";
     if (mermaidStatus !== "") {
       lines.push(`    ${entry.task.title} :${mermaidStatus}, ${entry.task.taskId}, ${entry.startDate}, ${entry.endDate}`);
-      continue;
+    } else {
+      lines.push(`    ${entry.task.title} :${entry.task.taskId}, ${entry.startDate}, ${entry.endDate}`);
     }
-    lines.push(`    ${entry.task.title} :${entry.task.taskId}, ${entry.startDate}, ${entry.endDate}`);
   }
 
   await writeFile(filePath, `${lines.join("\n")}\n`, "utf8");
@@ -601,7 +637,7 @@ async function writeGantt(filePath: string, project: Project, schedule: Schedule
 
 async function writeScheduleCsv(filePath: string, schedule: ScheduleEntry[]): Promise<void> {
   const lines = [
-    ["task_id", "title", "status", "priority", "start_date", "end_date", "due_date", "depends_on"].join(","),
+    SCHEDULE_HEADERS.join(","),
     ...schedule.map((entry) =>
       [
         entry.task.taskId,
@@ -618,6 +654,109 @@ async function writeScheduleCsv(filePath: string, schedule: ScheduleEntry[]): Pr
   await writeFile(filePath, `${lines.join("\n")}\n`, "utf8");
 }
 
+async function readProjectFile(filePath: string): Promise<Project> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const projectRows = await readCsvRows(filePath, PROJECT_HEADERS, errors, true);
+  if (projectRows === null) {
+    throw new Error(errors.join("\n"));
+  }
+  const project = parseProject(filePath, projectRows.rows, errors, warnings);
+  for (const warning of warnings) {
+    console.log(`WARNING: ${warning}`);
+  }
+  if (errors.length > 0 || project === null) {
+    throw new Error(errors.join("\n"));
+  }
+  return project;
+}
+
+async function readScheduleFile(filePath: string): Promise<ScheduleEntry[]> {
+  const errors: string[] = [];
+  const scheduleRows = await readCsvRows(filePath, SCHEDULE_HEADERS, errors, true);
+  if (scheduleRows === null) {
+    throw new Error(errors.join("\n"));
+  }
+
+  const entries = scheduleRows.rows
+    .map((row, index) => parseScheduleRow(filePath, row, index, errors))
+    .filter((entry): entry is ScheduleEntry => entry !== null);
+
+  if (errors.length > 0) {
+    throw new Error(errors.join("\n"));
+  }
+  return entries;
+}
+
+function parseScheduleRow(
+  filePath: string,
+  row: Record<string, string>,
+  index: number,
+  errors: string[],
+): ScheduleEntry | null {
+  const lineNo = index + 2;
+  const taskId = row.task_id.trim();
+  const title = row.title.trim();
+  const status = row.status.trim();
+  const priority = row.priority.trim();
+  const startDate = parseIsoDate(
+    row.start_date.trim(),
+    `${filePath}:${lineNo} invalid start_date: ${row.start_date.trim()}`,
+    errors,
+  );
+  const endDate = parseIsoDate(
+    row.end_date.trim(),
+    `${filePath}:${lineNo} invalid end_date: ${row.end_date.trim()}`,
+    errors,
+  );
+  const dueDate = parseIsoDate(
+    row.due_date.trim(),
+    `${filePath}:${lineNo} invalid due_date: ${row.due_date.trim()}`,
+    errors,
+  );
+
+  if (!TASK_ID_PATTERN.test(taskId)) {
+    errors.push(`${filePath}:${lineNo} invalid task_id: ${taskId}`);
+  }
+  if (!ALLOWED_STATUSES.has(status as Status)) {
+    errors.push(`${filePath}:${lineNo} invalid status: ${status}`);
+  }
+  if (!ALLOWED_PRIORITIES.has(priority as Priority)) {
+    errors.push(`${filePath}:${lineNo} invalid priority: ${priority}`);
+  }
+  if (startDate === null || endDate === null || dueDate === null) {
+    return null;
+  }
+
+  return {
+    task: {
+      taskId,
+      title,
+      estimateDays: businessDaysBetween(startDate, endDate),
+      dueDate,
+      priority: priority as Priority,
+      dependsOn: row.depends_on.split("|").map((value) => value.trim()).filter(Boolean),
+      status: status as Status,
+      rowIndex: index + 1,
+    },
+    startDate,
+    endDate,
+  };
+}
+
+function businessDaysBetween(startDate: string, endDate: string): number {
+  let count = 0;
+  let current = startDate;
+  while (current <= endDate) {
+    const day = toUtcDate(current).getUTCDay();
+    if (day !== 0 && day !== 6) {
+      count += 1;
+    }
+    current = addCalendarDays(current, 1);
+  }
+  return count;
+}
+
 function escapeCsv(value: string): string {
   if (!value.includes(",") && !value.includes("\"") && !value.includes("\n")) {
     return value;
@@ -632,16 +771,13 @@ function printValidationSummary(validation: ValidationResult): void {
   for (const warning of validation.warnings) {
     console.log(`WARNING: ${warning}`);
   }
-
   if (validation.errors.length === 0 && validation.warnings.length === 0) {
     console.log("Validation passed with no issues.");
-    return;
-  }
-  if (validation.errors.length === 0) {
+  } else if (validation.errors.length === 0) {
     console.log("Validation passed with warnings.");
-    return;
+  } else {
+    console.log("Validation failed.");
   }
-  console.log("Validation failed.");
 }
 
 function addCalendarDays(dateString: string, days: number): string {
