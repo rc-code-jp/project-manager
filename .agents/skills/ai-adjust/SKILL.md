@@ -1,3 +1,8 @@
+---
+name: ai-adjust
+description: Review and adjust the drafted schedule with AI assistance, update schedule.csv, and regenerate the final gantt output.
+---
+
 # AI Adjust Skill
 
 初稿スケジュールを読み、Codex に調整案を作らせて最終版ガントを再生成する。

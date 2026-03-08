@@ -1,3 +1,8 @@
+---
+name: validate
+description: Validate tasks.csv, project.csv, and optional holidays.csv against the project template and scheduling rules before draft generation.
+---
+
 # Validate Skill
 
 `tasks.csv`、`project.csv`、`holidays.csv` の妥当性確認を行う。

@@ -1,3 +1,8 @@
+---
+name: draft-plan
+description: Generate an initial project schedule and gantt output from validated CSV inputs using rule-based scheduling constraints.
+---
+
 # Draft Plan Skill
 
 検証済み CSV から、ルールベースの初稿スケジュールを生成する。
