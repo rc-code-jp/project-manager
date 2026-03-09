@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "viewer": "node --import tsx scripts/viewer-dev.ts",
+    "viewer:build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "validate": "node --import tsx scripts/project-manager.ts validate",
     "draft": "node --import tsx scripts/project-manager.ts draft",
@@ -13,7 +15,9 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "mermaid": "^11.12.0",
     "tsx": "^4.20.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vite": "^7.1.7"
   }
 }

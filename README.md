@@ -13,6 +13,7 @@ AI を利用して、CSV から軽量なプロジェクト計画を生成し、�
 - タスク概要と担当者の得意分野に基づく AI 担当割当
 - AI によるスケジュール調整
 - 担当者 ID 付きの Mermaid `gantt` 形式で初稿・調整後ガント出力
+- 生成済み `gantt.mmd` をブラウザでホットリロード表示
 
 ## ディレクトリ
 
@@ -107,7 +108,32 @@ npm run render -- --project <project-name>
 - 依存関係導入: `npm install`
 - テスト実行: `npm test`
 - 型検査: `npm run typecheck`
+- viewer 起動: `npm run viewer -- --project <project-name>`
+- viewer ビルド: `npm run viewer:build`
 
 ### CLI フラグ一覧
 
 `--project <name>` は `--input-dir data/<name> --output-dir output/<name>` の省略形。個別にディレクトリを指定したい場合は `--input-dir`、`--output-dir`、`--project-file`、`--schedule-file`、`--output-file` を直接指定する。
+
+## ガント viewer
+
+`output/<project-name>/gantt.mmd` をブラウザで表示するローカル viewer を用意している。viewer 自体のコード変更は Vite の HMR で反映され、対象の `gantt.mmd` を更新するとブラウザも自動で再読み込みする。
+
+Codex から使う場合は `view-gantt` スキル名で依頼してよい。複数プロジェクトがある場合、スキルはどの `project-name` を開くか必ず確認する。
+
+起動手順:
+
+```bash
+npm run viewer -- --project <project-name>
+```
+
+別ターミナルで `gantt.mmd` を更新する例:
+
+```bash
+npm run render -- --project <project-name>
+```
+
+補足:
+
+- viewer は表示専用で、CSV 編集やスケジュール計算は行わない。
+- `output/<project-name>/gantt.mmd` が存在しない場合は、viewer 上に不足ファイルのパスを表示する。

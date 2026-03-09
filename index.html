@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Manager Gantt Viewer</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="page-header">
+        <p class="eyebrow">Project Manager</p>
+        <h1>Gantt Viewer</h1>
+        <p id="viewer-meta" class="viewer-meta"></p>
+      </header>
+
+      <main class="layout">
+        <section class="panel panel-chart">
+          <div class="panel-header">
+            <h2>Preview</h2>
+          </div>
+          <div id="status-banner" class="status-banner" hidden></div>
+          <div id="chart-root" class="chart-root" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

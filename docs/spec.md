@@ -9,7 +9,8 @@
 - 対象実行環境は `Codex CLI` のみとする。
 - 利用者は手動で `codex` を起動し、スキルを呼び出す。
 - MVP の主目的は、入力 CSV の妥当性確認、ルールベース初稿生成、AI 調整、Mermaid 形式ガントチャート生成である。
-- 専用アプリケーション、GUI、Web API は作成しない。
+- 専用アプリケーションや Web API は作成しない。
+- ただし、生成済み `gantt.mmd` をローカル確認するための表示専用 viewer は追加してよい。
 
 ## 実装原則
 
@@ -19,6 +20,7 @@
 - 機械的に判定できる処理は明示的なルールで扱い、曖昧な判断だけを Codex に委ねる。
 - 入力ファイルは読み取り専用として扱い、スキルが直接書き換えてはならない。
 - 生成結果は `output/` などの出力先に返すものとし、少なくとも `gantt.mmd` を生成できなければならない。
+- 表示専用 viewer を追加する場合でも、Mermaid 記法の生成責務は CLI 側に残す。
 
 ## 最小ユーザーストーリー
 
@@ -30,6 +32,7 @@
 6. Codex が `tasks.csv` の概要と `members.csv` の得意分野をもとに `schedule.csv` の担当者 ID を割り振る。
 7. 利用者または Codex が `schedule.csv` を見て調整する。
 8. スキルが `gantt.mmd` を再生成する。
+9. 利用者は必要に応じてローカル viewer で `gantt.mmd` をブラウザ確認できる。
 
 ## 入力ファイル
 
@@ -379,12 +382,13 @@ task_id,title,summary,assignee_id,status,priority,start_date,end_date,due_date,d
 3. `ai-assign` で担当者 ID を割り振り、`schedule.csv` を更新する。
 4. `ai-adjust` で初稿を見直し、必要なら `schedule.csv` を更新する。
 5. `render` で `gantt.mmd` を生成する。
+6. 必要に応じて viewer で `gantt.mmd` を確認する。
 
 ## 非対象
 
 - 実績工数の反映
 - 祝日以外の複雑なカレンダー例外
-- GUI 提供
+- CSV 編集やスケジュール計算を行う GUI 提供
 - 自動での Codex 起動
 
 ## 品質基準

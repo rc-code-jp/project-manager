@@ -33,3 +33,11 @@ Markdown と CSV は簡潔に保ち、長い説明よりも更新しやすい記
 ## コミットとプルリクエストの指針
 
 最近の履歴では、短い命令形の件名と、必要に応じた `feat:` などの接頭辞が使われています。コミットは 1 つの変更目的に絞り、たとえば `docs: align template rules with spec` のように内容がすぐ分かる件名にしてください。プルリクエストでは、利用者に見える変更点、影響するファイル、残作業の有無を簡潔にまとめます。CSV 形式やスケジュール規則を変更する場合は、差分例や生成結果の抜粋も添えてください。
+
+## Skills
+
+- `validate`: 入力 CSV の妥当性確認を行う。ファイル: [`.agents/skills/validate/SKILL.md`](/Users/rc/work/project-manager/.agents/skills/validate/SKILL.md)
+- `draft-plan`: 検証済み CSV から初稿スケジュールと `gantt.mmd` を生成する。ファイル: [`.agents/skills/draft-plan/SKILL.md`](/Users/rc/work/project-manager/.agents/skills/draft-plan/SKILL.md)
+- `ai-assign`: タスク概要と担当者の得意分野から `assignee_id` を割り振る。ファイル: [`.agents/skills/ai-assign/SKILL.md`](/Users/rc/work/project-manager/.agents/skills/ai-assign/SKILL.md)
+- `ai-adjust`: 初稿スケジュールを見直して `schedule.csv` を更新し、ガントを再生成する。ファイル: [`.agents/skills/ai-adjust/SKILL.md`](/Users/rc/work/project-manager/.agents/skills/ai-adjust/SKILL.md)
+- `view-gantt`: ローカル viewer を起動して `gantt.mmd` をブラウザ表示する。複数プロジェクトがある場合は対象を必ず確認する。ファイル: [`.agents/skills/view-gantt/SKILL.md`](/Users/rc/work/project-manager/.agents/skills/view-gantt/SKILL.md)
