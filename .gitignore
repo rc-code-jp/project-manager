@@ -1,5 +1,3 @@
 .DS_Store
-data/
-output/
 node_modules/
 dist/

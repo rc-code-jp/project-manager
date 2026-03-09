@@ -51,7 +51,7 @@
 ## テンプレート配置
 
 - 入力テンプレートは `template/` 配下に配置する。
-- 実データは Git 管理対象外の `data/<project-name>/` 配下に配置することを想定する。
+- 実データは `data/<project-name>/` 配下に配置する。
 - 出力先は `output/<project-name>/` とする。
 - テンプレート定義は [template/README.md](/Users/rc/work/project-manager/template/README.md) と一致していなければならない。
 

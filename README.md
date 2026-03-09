@@ -2,7 +2,7 @@
 
 AI を利用して、CSV から軽量なプロジェクト計画を生成し、初稿から調整版まで管理する。
 
-実タスクや実名は Git 管理せず、テンプレートをコピーして利用する。
+実データと生成物も含めて Git 管理し、テンプレートをコピーして利用する。
 担当者は `members.csv` の `member_id` で管理し、タスク概要から AI が `assignee_id` を割り振れるようにする。
 
 ## できること
@@ -18,8 +18,8 @@ AI を利用して、CSV から軽量なプロジェクト計画を生成し、�
 ## ディレクトリ
 
 - `template/`: 入力テンプレート
-- `data/<project-name>/`: 実データ配置先。Git 管理対象外
-- `output/<project-name>/`: 生成物配置先。Git 管理対象外
+- `data/<project-name>/`: 実データ配置先。Git 管理対象
+- `output/<project-name>/`: 生成物配置先。Git 管理対象
 - `.agents/skills/`: Codex CLI から呼び出すスキル定義
 - `scripts/`: TypeScript 補助 CLI
 
