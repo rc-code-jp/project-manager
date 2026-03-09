@@ -93,26 +93,26 @@ type CsvRows = {
 
 type ParsedArgs = {
   command: "validate" | "draft" | "render";
-  inputDir: string;
-  outputDir: string;
-  projectFile: string;
-  scheduleFile: string;
-  outputFile: string;
+  inputDir?: string;
+  outputDir?: string;
+  projectFile?: string;
+  scheduleFile?: string;
+  outputFile?: string;
 };
 
 async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
 
   if (args.command === "render") {
-    const project = await readProjectFile(args.projectFile);
-    const schedule = await readScheduleFile(args.scheduleFile);
-    await mkdir(path.dirname(args.outputFile), { recursive: true });
-    await writeGantt(args.outputFile, project, schedule);
+    const project = await readProjectFile(args.projectFile!);
+    const schedule = await readScheduleFile(args.scheduleFile!);
+    await mkdir(path.dirname(args.outputFile!), { recursive: true });
+    await writeGantt(args.outputFile!, project, schedule);
     console.log(`Generated ${args.outputFile}`);
     return 0;
   }
 
-  const validation = await validateInputs(args.inputDir);
+  const validation = await validateInputs(args.inputDir!);
   printValidationSummary(validation);
 
   if (args.command === "validate") {
@@ -128,9 +128,9 @@ async function main(argv: string[]): Promise<number> {
     console.log(`WARNING: ${warning}`);
   }
 
-  await mkdir(args.outputDir, { recursive: true });
-  const schedulePath = path.join(args.outputDir, "schedule.csv");
-  const ganttPath = path.join(args.outputDir, "gantt.mmd");
+  await mkdir(args.outputDir!, { recursive: true });
+  const schedulePath = path.join(args.outputDir!, "schedule.csv");
+  const ganttPath = path.join(args.outputDir!, "gantt.mmd");
   await writeScheduleCsv(schedulePath, schedule);
   console.log(`Generated ${schedulePath}`);
   await writeGantt(ganttPath, validation.project, schedule);
@@ -150,11 +150,11 @@ function parseArgs(argv: string[]): ParsedArgs {
     throw new Error(`Unknown command: ${command}`);
   }
 
-  let inputDir = "data";
-  let outputDir = "output";
-  let projectFile = path.join("data", "project.csv");
-  let scheduleFile = path.join("output", "schedule.csv");
-  let outputFile = path.join("output", "gantt.mmd");
+  let inputDir: string | undefined;
+  let outputDir: string | undefined;
+  let projectFile: string | undefined;
+  let scheduleFile: string | undefined;
+  let outputFile: string | undefined;
 
   for (let index = 1; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -194,6 +194,32 @@ function parseArgs(argv: string[]): ParsedArgs {
       continue;
     }
     throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  if (projectFile === undefined && inputDir !== undefined) {
+    projectFile = path.join(inputDir, "project.csv");
+  }
+  if (scheduleFile === undefined && outputDir !== undefined) {
+    scheduleFile = path.join(outputDir, "schedule.csv");
+  }
+  if (outputFile === undefined && outputDir !== undefined) {
+    outputFile = path.join(outputDir, "gantt.mmd");
+  }
+
+  if ((command === "validate" || command === "draft") && inputDir === undefined) {
+    throw new Error(`Specify --project or --input-dir for ${command}`);
+  }
+  if (command === "draft" && outputDir === undefined) {
+    throw new Error("Specify --project or --output-dir for draft");
+  }
+  if (command === "render" && projectFile === undefined) {
+    throw new Error("Specify --project, --input-dir, or --project-file for render");
+  }
+  if (command === "render" && scheduleFile === undefined) {
+    throw new Error("Specify --project, --output-dir, or --schedule-file for render");
+  }
+  if (command === "render" && outputFile === undefined) {
+    throw new Error("Specify --project, --output-dir, or --output-file for render");
   }
 
   return { command, inputDir, outputDir, projectFile, scheduleFile, outputFile };

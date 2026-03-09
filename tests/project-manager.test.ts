@@ -40,6 +40,12 @@ test("validate passes for template data", async () => {
   assert.match(result.stdout, /Validation passed with no issues\./);
 });
 
+test("validate requires project or input-dir instead of defaulting to data root csv files", async () => {
+  const result = await runCli(["validate"]);
+  assert.equal(result.code, 1, result.stdout + result.stderr);
+  assert.match(result.stderr, /Specify --project or --input-dir for validate/);
+});
+
 test("validate fails for cyclic dependency", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "project-manager-"));
   await writeCsv(path.join(root, "tasks.csv"), [
@@ -178,6 +184,28 @@ test("render generates gantt from schedule", async () => {
   assert.equal(result.code, 0, result.stdout + result.stderr);
   assert.match(gantt, /Adjusted Design \[MEM-001\] :done, TASK-001, 2026-03-10, 2026-03-11/);
   assert.match(gantt, /Adjusted Build \[MEM-002\] :active, TASK-002, 2026-03-12, 2026-03-13/);
+});
+
+test("render derives project and output files from explicit input-dir and output-dir", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "project-manager-"));
+  const inputDir = path.join(root, "project-a");
+  const outputDir = path.join(root, "rendered");
+  await mkdir(inputDir, { recursive: true });
+  await mkdir(outputDir, { recursive: true });
+  await writeCsv(path.join(inputDir, "project.csv"), [
+    ["project_name", "start_date"],
+    ["Adjusted", "2026-03-10"],
+  ]);
+  await writeCsv(path.join(outputDir, "schedule.csv"), [
+    ["task_id", "title", "summary", "assignee_id", "status", "priority", "start_date", "end_date", "due_date", "depends_on"],
+    ["TASK-001", "Adjusted Design", "設計を調整", "MEM-001", "完了", "高", "2026-03-10", "2026-03-11", "2026-03-12", ""],
+  ]);
+
+  const result = await runCli(["render", "--input-dir", inputDir, "--output-dir", outputDir]);
+  const gantt = await readFile(path.join(outputDir, "gantt.mmd"), "utf8");
+
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.match(gantt, /Adjusted Design \[MEM-001\] :done, TASK-001, 2026-03-10, 2026-03-11/);
 });
 
 test("validate fails when assignee_id references undefined member_id", async () => {
