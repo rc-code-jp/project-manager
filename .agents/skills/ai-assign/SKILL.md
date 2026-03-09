@@ -15,16 +15,16 @@ description: Assign task owners by matching task summaries to member specialties
 
 ## 前提
 
-- `data/members.csv` が存在する
-- `output/schedule.csv` が生成済みである
+- `data/<project-name>/members.csv` が存在する
+- `output/<project-name>/schedule.csv` が生成済みである
 - `schedule.csv` のヘッダーは維持する
 
 ## 実行フロー
 
-1. `data/members.csv` の `member_id`、`name`、`specialties`、`available_from`、`available_until` を確認する
-2. `output/schedule.csv` の `title`、`summary`、`priority`、`due_date` を確認する
+1. `data/<project-name>/members.csv` の `member_id`、`name`、`specialties`、`available_from`、`available_until` を確認する
+2. `output/<project-name>/schedule.csv` の `title`、`summary`、`priority`、`due_date` を確認する
 3. 各タスクに最も適した `assignee_id` を埋める
-4. 判断が迷うタスクや根拠は `output/assignment_notes.md` に残す
+4. 判断が迷うタスクや根拠は `output/<project-name>/assignment_notes.md` に残す
 
 ## 判断ルール
 
@@ -38,4 +38,4 @@ description: Assign task owners by matching task summaries to member specialties
 
 - `assignee_id` には `members.csv` に存在する `member_id` だけを書き込む
 - 未確定なら空欄のままにして理由をメモする
-- 更新後は必要に応じて `npm run render -- --project-file data/project.csv --schedule-file output/schedule.csv --output-file output/gantt.mmd` を実行する
+- 更新後は必要に応じて `npm run render -- --project <project-name>` を実行する

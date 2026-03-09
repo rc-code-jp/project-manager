@@ -141,7 +141,7 @@ async function main(argv: string[]): Promise<number> {
 function parseArgs(argv: string[]): ParsedArgs {
   if (argv.length === 0) {
     throw new Error(
-      "Usage: project-manager <validate|draft|render> [--input-dir DIR] [--output-dir DIR] [--project-file FILE] [--schedule-file FILE] [--output-file FILE]",
+      "Usage: project-manager <validate|draft|render> [--project NAME] [--input-dir DIR] [--output-dir DIR] [--project-file FILE] [--schedule-file FILE] [--output-file FILE]",
     );
   }
 
@@ -158,6 +158,16 @@ function parseArgs(argv: string[]): ParsedArgs {
 
   for (let index = 1; index < argv.length; index += 1) {
     const arg = argv[index];
+    if (arg === "--project") {
+      const name = requireValue(argv, index, arg);
+      inputDir = path.join("data", name);
+      outputDir = path.join("output", name);
+      projectFile = path.join(inputDir, "project.csv");
+      scheduleFile = path.join(outputDir, "schedule.csv");
+      outputFile = path.join(outputDir, "gantt.mmd");
+      index += 1;
+      continue;
+    }
     if (arg === "--input-dir") {
       inputDir = requireValue(argv, index, arg);
       index += 1;

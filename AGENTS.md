@@ -2,7 +2,7 @@
 
 ## プロジェクト構成とモジュール配置
 
-このリポジトリは、Codex CLI 向けの軽量なプロジェクト計画ワークフローを定義します。ルート直下には主要ドキュメントを置きます。[`README.md`](/Users/rc/work/project-manager/README.md) は入口、[`docs/spec.md`](/Users/rc/work/project-manager/docs/spec.md) は実装仕様、[`template/`](/Users/rc/work/project-manager/template) には入力用 CSV テンプレート（`tasks.csv`、`project.csv`、`members.csv`、`holidays.csv`）と補足説明を配置します。実データは `data/`、生成物は `output/` に置き、どちらも Git 管理対象外です。
+このリポジトリは、Codex CLI 向けの軽量なプロジェクト計画ワークフローを定義します。ルート直下には主要ドキュメントを置きます。[`README.md`](/Users/rc/work/project-manager/README.md) は入口、[`docs/spec.md`](/Users/rc/work/project-manager/docs/spec.md) は実装仕様、[`template/`](/Users/rc/work/project-manager/template) には入力用 CSV テンプレート（`tasks.csv`、`project.csv`、`members.csv`、`holidays.csv`）と補足説明を配置します。実データは `data/<project-name>/`、生成物は `output/<project-name>/` に置き、どちらも Git 管理対象外です。複数プロジェクトはディレクトリ名で区別します。
 
 ## ビルド・テスト・開発コマンド
 

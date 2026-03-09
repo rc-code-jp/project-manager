@@ -15,14 +15,14 @@ description: Validate tasks.csv, project.csv, and optional holidays.csv against 
 
 ## 前提
 
-- 実データは通常 `data/` 配下に置く
+- 実データは通常 `data/<project-name>/` 配下に置く
 - 入力ファイルは読み取り専用として扱う
 - `holidays.csv` は任意
 
 ## 実行
 
 ```bash
-npm run validate -- --input-dir data
+npm run validate -- --project <project-name>
 ```
 
 ## 確認事項

@@ -48,7 +48,8 @@
 ## テンプレート配置
 
 - 入力テンプレートは `template/` 配下に配置する。
-- 実データは Git 管理対象外の `data/` 配下などに配置することを想定する。
+- 実データは Git 管理対象外の `data/<project-name>/` 配下に配置することを想定する。
+- 出力先は `output/<project-name>/` とする。
 - テンプレート定義は [template/README.md](/Users/rc/work/project-manager/template/README.md) と一致していなければならない。
 
 ## ディレクトリ方針
@@ -56,6 +57,7 @@
 - スキル本体はリポジトリ直下または `.agents/skills/` 配下に配置してよい。
 - 反復利用する検証や整形処理がある場合のみ、補助スクリプトを追加してよい。
 - 入力テンプレート、仕様書、サンプル出力がリポジトリ内に揃っており、`Codex CLI` 単体で試せる状態であること。
+- 複数プロジェクトは `data/<project-name>/` と `output/<project-name>/` でディレクトリを分けて管理する。`--project <name>` フラグで両方を一括指定できる。
 
 ## CSV 仕様
 

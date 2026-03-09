@@ -17,17 +17,17 @@ description: Generate an initial project schedule and gantt output from validate
 ## 前提
 
 - 先に `validate` 相当の確認を通しておく
-- 入力は通常 `data/`、出力は通常 `output/`
+- 入力は通常 `data/<project-name>/`、出力は通常 `output/<project-name>/`
 - 入力 CSV は上書きしない
 
 ## 実行
 
 ```bash
-npm run draft -- --input-dir data --output-dir output
+npm run draft -- --project <project-name>
 ```
 
 ## 確認事項
 
-- `output/schedule.csv` が AI 調整の入力になる
-- `output/gantt.mmd` は初稿の可視化用である
+- `output/<project-name>/schedule.csv` が AI 調整の入力になる
+- `output/<project-name>/gantt.mmd` は初稿の可視化用である
 - 期限超過は `WARNING:` として表示される

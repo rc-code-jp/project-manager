@@ -15,20 +15,20 @@ description: Review and adjust the drafted schedule with AI assistance, update s
 
 ## 前提
 
-- `output/schedule.csv` と `output/gantt.mmd` が生成済みである
+- `output/<project-name>/schedule.csv` と `output/<project-name>/gantt.mmd` が生成済みである
 - `assignee_id` の変更が必要な場合は `members.csv` を参照して `member_id` ベースで扱う
 - 調整内容は AI が提案・編集し、人間が最終確認する
-- 元の `data/` 入力は変更しない
+- 元の `data/<project-name>/` 入力は変更しない
 
 ## 実行フロー
 
-1. `output/schedule.csv` と `output/gantt.mmd` を確認する
-2. 調整後の `output/schedule.csv` を更新する
-3. 調整理由を `output/adjustment_notes.md` にまとめる
+1. `output/<project-name>/schedule.csv` と `output/<project-name>/gantt.mmd` を確認する
+2. 調整後の `output/<project-name>/schedule.csv` を更新する
+3. 調整理由を `output/<project-name>/adjustment_notes.md` にまとめる
 4. 次のコマンドで調整後ガントを再生成する
 
 ```bash
-npm run render -- --project-file data/project.csv --schedule-file output/schedule.csv --output-file output/gantt.mmd
+npm run render -- --project <project-name>
 ```
 
 ## 確認事項
